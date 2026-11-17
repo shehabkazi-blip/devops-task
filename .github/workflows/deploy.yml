@@ -17,10 +17,20 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Check required environment variables
+        env:
+          ROLE: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          INSTANCE: ${{ vars.EC2_INSTANCE_ID }}
+        run: |
+          missing=0
+          [ -n "$ROLE" ] || { echo "::error::Variable AWS_DEPLOY_ROLE_ARN is empty. Add it in Settings > Environments > ${{ inputs.environment }} > Variables."; missing=1; }
+          [ -n "$INSTANCE" ] || { echo "::error::Variable EC2_INSTANCE_ID is empty. Add it in Settings > Environments > ${{ inputs.environment }} > Variables."; missing=1; }
+          exit $missing
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}   # environment-scoped variable
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
 
       - name: Deploy over SSM (instance rolls itself back if the smoke test fails)
         env:
@@ -29,7 +39,7 @@ jobs:
           GIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          CMD="cd /opt/app && git fetch --depth 1 origin ${GIT_SHA} && git checkout --force ${GIT_SHA} && ./scripts/deploy.sh ${IMAGE_TAG}"
+          CMD="export HOME=/root && cd /opt/app && git fetch --depth 1 origin ${GIT_SHA} && git checkout --force ${GIT_SHA} && ./scripts/deploy.sh ${IMAGE_TAG}"
           CMD_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name AWS-RunShellScript \

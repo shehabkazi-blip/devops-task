@@ -45,12 +45,6 @@ jobs:
           echo "version=$(cat VERSION).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
           echo "sha=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      # TEMPORARY: shows the identity GitHub sends to AWS. Delete once the login works.
-      - name: Debug OIDC claims (remove after)
-        run: |
-          TOKEN=$(curl -s -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
-          echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | awk '{ while (length($0)%4) $0=$0"="; print }' | base64 -d | jq '{sub, aud, iss}'
-
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279849615230:role/devops-task-ci-push
@@ -71,8 +65,8 @@ jobs:
           push: true
           provenance: false
           tags: |
-            ${{ vars.ECR_REPOSITORY }}:${{ steps.ver.outputs.version }}
-            ${{ vars.ECR_REPOSITORY }}:${{ steps.ver.outputs.sha }}
+            ${{ steps.ecr.outputs.registry }}/devops-task:${{ steps.ver.outputs.version }}
+            ${{ steps.ecr.outputs.registry }}/devops-task:${{ steps.ver.outputs.sha }}
           build-args: |
             APP_VERSION=${{ steps.ver.outputs.version }}
             GIT_SHA=${{ github.sha }}
