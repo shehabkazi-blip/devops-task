@@ -41,10 +41,10 @@ VERSION                   major.minor; CI appends the run number for a semver ta
 
 ```mermaid
 flowchart LR
-  Dev[Developer] -->|PR| CI[CI: ruff, pytest+coverage, hadolint, shellcheck,<br/>terraform validate, build, Trivy gate]
-  Dev -->|merge to main| CD[CD: test, build multi-arch,<br/>tag 0.1.N + sha-xxxxxxx]
-  CD -->|OIDC role, no keys| ECR[(Amazon ECR<br/>immutable tags)]
-  CD -->|OIDC role, ssm:SendCommand| SSM[AWS SSM]
+  Dev[Developer] -->|PR| CI[CI: lint, test, scan]
+  Dev -->|merge to main| CD[CD: build multi-arch, tag 0.1.N and sha]
+  CD -->|OIDC role| ECR[(Amazon ECR)]
+  CD -->|OIDC role, SSM| SSM[AWS SSM]
   SSM --> EC2
   subgraph EC2[EC2 instance: Docker Compose]
     APP[app :8080]
@@ -62,7 +62,12 @@ flowchart LR
   APP -->|stdout JSON| ALLOY -->|push| LOKI
   PROM --> GRAF
   LOKI --> GRAF
-  APP -->|awslogs driver| CW[(CloudWatch Logs<br/>retention set)]
+  APP -->|awslogs driver| CW[(CloudWatch Logs)]
+```
+
+Kubernetes flow (local kind cluster): build image, `kind load`, `kubectl apply -k k8s/`, Ingress, Service, pods.
+
+## 3. Run locally (Docker Compose)
 
 ## 3. Run locally (Docker Compose)
 Prerequisites: Docker 24+ with the Compose v2 plugin, Python 3.12 (only for running tests).
