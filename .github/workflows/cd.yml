@@ -45,11 +45,16 @@ jobs:
           echo "version=$(cat VERSION).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
           echo "sha=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
+      # TEMPORARY: shows the identity GitHub sends to AWS. Delete once the login works.
+      - name: Debug OIDC claims (remove after)
+        run: |
+          TOKEN=$(curl -s -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
+          echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | awk '{ while (length($0)%4) $0=$0"="; print }' | base64 -d | jq '{sub, aud, iss}'
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279849615230:role/devops-task-ci-push
           aws-region: us-west-2
-          audience: sts.amazonaws.com
 
       - id: ecr
         uses: aws-actions/amazon-ecr-login@v2
@@ -85,6 +90,8 @@ jobs:
       image_tag: ${{ needs.build-push.outputs.image_tag }}
 
   deploy-production:
+    # Skipped until a production environment exists. Set repo variable ENABLE_PRODUCTION=true to turn it on.
+    if: ${{ vars.ENABLE_PRODUCTION == 'true' }}
     needs: [build-push, deploy-staging]
     permissions:
       id-token: write
