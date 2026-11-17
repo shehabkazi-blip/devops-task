@@ -62,9 +62,6 @@ flowchart LR
   PROM --> GRAF
   LOKI --> GRAF
   APP -->|awslogs driver| CW[(CloudWatch Logs<br/>retention set)]
-```
-Kubernetes flow (local kind cluster): `docker build` → `kind load` → `kubectl apply -k k8s/` →
-Ingress (nginx) → Service → 2+ pods (HPA 2–5) ; `kubectl set image` for rolling updates, `rollout undo` to revert.
 
 ## 3. Run locally (Docker Compose)
 Prerequisites: Docker 24+ with the Compose v2 plugin, Python 3.12 (only for running tests).
