@@ -1,0 +1,49 @@
+#!/bin/bash
+# Bootstrap: Docker, Compose, swap, repo checkout, health timer. Idempotent enough to re-run.
+set -euxo pipefail
+exec > >(tee /var/log/bootstrap.log) 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get install -y docker.io git curl unzip jq
+systemctl enable --now docker
+
+# AWS CLI v2 (not preinstalled on Ubuntu); deploy.sh uses it with the instance profile.
+if ! command -v aws >/dev/null; then
+  curl -fsSL -o /tmp/awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+  unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install && rm -rf /tmp/aws /tmp/awscliv2.zip
+fi
+
+# Compose v2 plugin, pinned version (the distro package lags behind).
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose \
+  https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# 2 GiB swap: safety net on small instances.
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+# Repo holds compose files + observability config. Deploys later `git checkout <sha>` here.
+if [ ! -d /opt/app/.git ]; then
+  git clone --depth 1 --branch "${repo_branch}" "${repo_url}" /opt/app
+fi
+
+cat > /opt/app/instance.env <<ENV
+ECR_REPO=${ecr_repo}
+AWS_REGION=${region}
+APP_ENV=${environment}
+LOG_GROUP=${log_group}
+GRAFANA_PARAM=${grafana_ssm}
+ENV
+chmod 600 /opt/app/instance.env
+
+# Host health check every 5 minutes via systemd timer.
+install -m 0755 /opt/app/scripts/system_health.sh /usr/local/bin/system_health.sh
+cp /opt/app/scripts/systemd/system-health.service /opt/app/scripts/systemd/system-health.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now system-health.timer
+
+echo "bootstrap complete; first deploy is triggered by the CD workflow"

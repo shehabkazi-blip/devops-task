@@ -1,0 +1,15 @@
+# Third file layered on EC2: use the prebuilt ECR image and ship app logs to CloudWatch.
+services:
+  app:
+    build: !reset null
+    image: ${ECR_REPO:?}:${IMAGE_TAG:?}
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      APP_VERSION: ${IMAGE_TAG}
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ${AWS_REGION:?}
+        awslogs-group: ${LOG_GROUP:?}
+        awslogs-create-group: "false"   # the log group (with retention) is created by Terraform
+        tag: "{{.Name}}"

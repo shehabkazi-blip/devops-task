@@ -1,0 +1,16 @@
+tests/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+.venv/
+.git/
+.github/
+Dockerfile
+.dockerignore
+requirements-dev.txt
+pytest.ini
+ruff.toml
+*.md

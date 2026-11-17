@@ -1,0 +1,56 @@
+// Discover every container through the Docker socket and ship logs to Loki.
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "10s"
+
+  // Match the compose project name (-p repo) used when running docker compose
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=repo"]
+  }
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.process.json_logs.receiver]
+}
+
+// Process logs and route JSON/plain container logs correctly
+loki.process "json_logs" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.match {
+    selector = "{service=\"devops-app\"}"
+
+    stage.json {
+      expressions = { level = "level", path = "path", method = "method", status = "status" }
+    }
+    stage.labels {
+      values = { level = "" }
+    }
+    stage.structured_metadata {
+      values = { path = "", method = "", status = "" }
+    }
+  }
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

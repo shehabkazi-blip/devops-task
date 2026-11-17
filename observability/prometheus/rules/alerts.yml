@@ -1,0 +1,57 @@
+# Thresholds are deliberately conservative for a single small instance. The "for"
+# duration trades detection speed against flapping; each choice is explained inline
+# and again in the README.
+groups:
+  - name: app
+    rules:
+      - alert: AppDown
+        expr: up{job="app"} == 0
+        for: 1m          # 4 missed scrapes at 15s. Fast enough to page, slow enough to ignore a restart blip.
+        labels: { severity: critical }
+        annotations:
+          summary: "App instance {{ $labels.instance }} is down"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_errors_total[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+          and sum(rate(http_requests_total[5m])) > 0.1
+        for: 5m          # >5% 5xx sustained for 5m. The traffic floor (0.1 req/s) stops one failed request on an idle service from paging.
+        labels: { severity: critical }
+        annotations:
+          summary: "5xx ratio is {{ $value | humanizePercentage }} over the last 5m"
+
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 10m         # a trivial JSON endpoint should be far below 500ms; 10m avoids reacting to a single slow burst.
+        labels: { severity: warning }
+        annotations:
+          summary: "p95 latency is {{ $value | humanizeDuration }}"
+
+  - name: host
+    rules:
+      - alert: HostDiskUsageHigh
+        expr: |
+          100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs"}
+                     / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs"}) > 80
+        for: 10m         # disk fills slowly, so a long "for" costs nothing and filters transient spikes (e.g. image pulls).
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.mountpoint }} is {{ $value | printf \"%.0f\" }}% full"
+
+      - alert: HostMemoryLow
+        expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 90
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Host memory usage is {{ $value | printf \"%.0f\" }}%"
+
+  - name: containers
+    rules:
+      - alert: ContainerMemoryNearLimit
+        expr: |
+          container_memory_working_set_bytes{name!=""}
+            / on(name) (container_spec_memory_limit_bytes{name!=""} > 0) > 0.9
+        for: 5m          # working set (what the OOM killer looks at) >90% of the limit; 5m excludes short allocation bursts.
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.name }} is using {{ $value | humanizePercentage }} of its memory limit"

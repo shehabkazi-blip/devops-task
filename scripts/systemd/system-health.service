@@ -1,0 +1,10 @@
+[Unit]
+Description=System health check
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/system_health.sh --log-file /var/log/system_health/health_log.txt
+LogsDirectory=system_health
+# exit 1 = warning is not a unit failure; exit 2 = critical marks the unit failed (alertable).
+SuccessExitStatus=1
+Nice=10
