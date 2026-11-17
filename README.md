@@ -38,6 +38,7 @@ VERSION                   major.minor; CI appends the run number for a semver ta
 ```
 
 ## 2. Architecture
+
 ```mermaid
 flowchart LR
   Dev[Developer] -->|PR| CI[CI: ruff, pytest+coverage, hadolint, shellcheck,<br/>terraform validate, build, Trivy gate]
