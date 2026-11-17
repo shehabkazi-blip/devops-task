@@ -2,9 +2,8 @@ environment        = "staging"
 instance_type      = "t3.small"
 log_retention_days = 7
 
-# --- EDIT THESE ---
-github_repo        = "YOUR_GITHUB_USER/YOUR_REPO"
-repo_url           = "https://github.com/YOUR_GITHUB_USER/YOUR_REPO.git"
-admin_cidrs        = ["203.0.113.10/32"] # your public IP: curl -s https://checkip.amazonaws.com
-ecr_repository_url = "123456789012.dkr.ecr.us-west-2.amazonaws.com/devops-task"
-ecr_repository_arn = "arn:aws:ecr:us-west-2:123456789012:repository/devops-task"
+github_repo        = "shehabkazi-blip/devops-task"
+repo_url           = "https://github.com/shehabkazi-blip/devops-task.git"
+admin_cidrs        = ["160.191.21.223/32"]
+ecr_repository_url = "279849615230.dkr.ecr.us-west-2.amazonaws.com/devops-task"
+ecr_repository_arn = "arn:aws:ecr:us-west-2:279849615230:repository/devops-task"

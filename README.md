@@ -67,7 +67,6 @@ flowchart LR
 
 Kubernetes flow (local kind cluster): build image, `kind load`, `kubectl apply -k k8s/`, Ingress, Service, pods.
 
-## 3. Run locally (Docker Compose)
 
 ## 3. Run locally (Docker Compose)
 Prerequisites: Docker 24+ with the Compose v2 plugin, Python 3.12 (only for running tests).
