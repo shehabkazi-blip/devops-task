@@ -75,7 +75,7 @@ resource "aws_instance" "app" {
   key_name                    = aws_key_pair.deployer.key_name
 
   metadata_options {
-    http_tokens               = "required"
+    http_tokens                 = "required"
     http_put_response_hop_limit = 1
   }
 
@@ -86,13 +86,13 @@ resource "aws_instance" "app" {
   }
 
   user_data = templatefile("${path.module}/userdata.sh.tftpl", {
-    repo_url        = var.repo_url
-    repo_branch     = var.repo_branch
-    ecr_repo        = var.ecr_repository_url
-    region          = var.region
-    environment     = var.environment
-    log_group       = local.log_group
-    grafana_ssm     = local.grafana_ssm
+    repo_url    = var.repo_url
+    repo_branch = var.repo_branch
+    ecr_repo    = var.ecr_repository_url
+    region      = var.region
+    environment = var.environment
+    log_group   = local.log_group
+    grafana_ssm = local.grafana_ssm
   })
 
   tags = { Name = local.name }
@@ -113,7 +113,7 @@ resource "aws_vpc_security_group_ingress_rule" "ssh" {
 }
 
 resource "aws_eip" "app" {
-  instance   = aws_instance.app.id
-  domain     = "vpc"
-  tags       = { Name = local.name }
+  instance = aws_instance.app.id
+  domain   = "vpc"
+  tags     = { Name = local.name }
 }
