@@ -143,16 +143,17 @@ Production was **not applied** to save cost; its configuration is proven with a 
 
 **Terraform plan and apply (staging):**
 
-![Terraform plan](docs/screenshots/terraform-plan.png)
-![Terraform apply](docs/screenshots/terraform-apply.png)
+**Terraform plan and apply (staging):**
+![Terraform Plan](docs/screenshots/terraform-plan.png)
+![Terraform Apply](docs/screenshots/terraform-apply.png)
 
 **Staging deploy and smoke test (CD run):**
-
-![CD run](docs/screenshots/cd-success.png)
+![Staging Deploy](docs/screenshots/staging_deploy.png)
+![Smoke Test Pass](docs/screenshots/smoke-test-pass.png)
+![AWS Server](docs/screenshots/aws_server.png)
 
 **Automatic rollback test** (`sudo /opt/app/scripts/deploy.sh does-not-exist` on the instance):
-
-![Rollback](docs/screenshots/rollback.png)
+![Automatic Rollback Test](docs/screenshots/k8s-rolout-rollback.png)
 
 ## 5. CI/CD and required configuration
 
@@ -164,7 +165,7 @@ Production was **not applied** to save cost; its configuration is proven with a 
 
 **CI proof (pull request checks):**
 
-![CI checks](docs/screenshots/ci-pr.png)
+![CI/CD Passed](docs/screenshots/ci-cd-passed.png)
 
 **Secrets: none.** AWS access uses GitHub OIDC; the only secret (the Grafana password) lives in SSM Parameter Store.
 
@@ -205,7 +206,7 @@ Secret is created with `kubectl create secret generic ...` and consumed through 
 
 **Rollout and rollback proof** (commands and output, only HTTP 200 during the update):
 
-![Kubernetes rollout and rollback](docs/screenshots/k8s-rollout.png)
+![Kubernetes rollout and rollback](docs/screenshots/k8s-rolout-rolback.png)
 
 **On EKS in production:** AWS Load Balancer Controller for ALB Ingress (plus ACM TLS) instead of ingress-nginx on kind;
 External Secrets Operator or the Secrets Store CSI Driver reading AWS Secrets Manager; IRSA (or EKS Pod Identity) for
@@ -237,33 +238,24 @@ Started with `docker-compose.monitoring.yml` (on EC2 the CD pipeline starts it).
 
 All three dashboards are provisioned from files, so they look the same locally and on EC2.
 
-**A. Local run (`docker compose`, laptop)**
-
-1. Application Dashboard:
-
-![Application dashboard (local)](docs/screenshots/local-application.png)
-
-2. Containers Dashboard:
-
-![Containers dashboard (local)](docs/screenshots/local-containers.png)
-
-3. Host Dashboard:
-
-![Host dashboard (local)](docs/screenshots/local-host.png)
+**A. Local run (docker compose, laptop)**
+* **Application Dashboard:**
+  ![Application Dashboard](docs/screenshots/application.png)
+* **Containers Dashboard:**
+  ![Containers Dashboard](docs/screenshots/containers.png)
+* **Host Dashboard:**
+  ![Host Dashboard](docs/screenshots/host.png)
 
 **B. AWS EC2 (staging, deployed by the CD pipeline)**
-
-1. Application Dashboard:
-
-![Application dashboard (EC2)](docs/screenshots/dashboard-application.png)
-
-2. Containers Dashboard:
-
-![Containers dashboard (EC2)](docs/screenshots/dashboard-containers.png)
-
-3. Host Dashboard:
-
-![Host dashboard (EC2)](docs/screenshots/dashboard-host.png)
+* **Application Dashboard:**
+  ![Application Dashboard](docs/screenshots/server_application.png)
+* **Containers Dashboard:**
+  ![Containers Dashboard](docs/screenshots/server_containers.png)
+* **Host Dashboard:**
+  ![Host Dashboard](docs/screenshots/server_host.png)
+  
+**Local Running Containers:**
+![Apps Running](docs/screenshots/apps_running.png)
 
 ### Log labels (cardinality)
 
