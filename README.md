@@ -83,7 +83,7 @@ Run the tests: `cd app && pip install -r requirements-dev.txt && ruff check . &&
 Generate an error spike for the walkthrough: set `ENABLE_FAULT_INJECTION=true` in `.env`,
 recreate the app, then `for i in $(seq 50); do curl -s -o /dev/null localhost:8080/debug/error; done`.
 
-**Final image size:27.2 MB (optimized multi-stage Alpine Python build).
+**Final image size: 115 MB.
 
 ## 4. Deploy to AWS EC2 (runbook)
 Prerequisites: AWS CLI configured with an admin-capable profile (for the one-time bootstrap),
