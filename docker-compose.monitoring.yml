@@ -1,6 +1,6 @@
 # Observability stack. Use together with the base file:
-#   docker compose -p repo -f docker-compose.yml -f docker-compose.monitoring.yml up -d --build
-# Only Grafana (3000), Prometheus (9090), Node Exporter (9100) and the app (8080) publish ports.
+#   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --build
+# Only Grafana (3000) and the app (8080) publish ports.
 # Everything else talks over the project's default (internal) Docker network.
 services:
   prometheus:
@@ -11,8 +11,6 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=15d
       - --storage.tsdb.retention.size=2GB
-    ports:
-      - "9090:9090"
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./observability/prometheus/rules:/etc/prometheus/rules:ro
@@ -37,6 +35,8 @@ services:
   alloy:
     image: grafana/alloy:v1.5.1
     container_name: alloy
+    # root is needed to read /var/run/docker.sock. The socket is effectively root on the
+    # host: see README "Security Considerations" for the trade-off.
     user: root
     command:
       - run
@@ -56,13 +56,14 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.8.2
     container_name: node-exporter
+    # Runs on the internal network (no published port). CPU, memory and disk come from the
+    # host through the read-only /proc, /sys and / mounts. Network counters show the
+    # container's own interface; see README "Observability" for this trade-off.
     command:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys
       - --path.rootfs=/rootfs
       - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
-    ports:
-      - "9100:9100"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -73,21 +74,24 @@ services:
         limits: { cpus: "0.10", memory: 64M }
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    # v0.49.1 cannot talk to Docker 29 ("client version 1.41 is too old"), so container names
+    # are missing. If this tag cannot be pulled, use gcr.io/cadvisor/cadvisor:v0.49.1 again.
+    image: ghcr.io/google/cadvisor:v0.53.0
     container_name: cadvisor
+    # Upstream-documented privileges: read-only host mounts, privileged, /dev/kmsg.
     privileged: true
     devices:
       - /dev/kmsg
     command:
       - --housekeeping_interval=30s
-      - --store_container_labels=true
+      - --store_container_labels=false
+      - --whitelisted_container_labels=com.docker.compose.service
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:rw
+      - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
     deploy:
       resources:
