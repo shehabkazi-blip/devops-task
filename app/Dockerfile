@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---- Build stage: install deps into an isolated venv ----
-FROM python:3.12.8-alpine3.21 AS builder
+FROM python:3.12-alpine3.21 AS builder
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
@@ -10,7 +10,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # ---- Final stage: runtime only, no pip, no build tools ----
-FROM python:3.12.8-alpine3.21
+FROM python:3.12-alpine3.21
 ARG APP_VERSION=0.1.0
 ARG GIT_SHA=unknown
 LABEL org.opencontainers.image.title="devops-task" \
@@ -19,8 +19,11 @@ LABEL org.opencontainers.image.title="devops-task" \
       org.opencontainers.image.revision="${GIT_SHA}" \
       org.opencontainers.image.licenses="MIT"
 
-# Fixed non-root UID/GID so Kubernetes runAsUser can match it.
-RUN addgroup -g 10001 -S app && adduser -u 10001 -S -G app -H -s /sbin/nologin app
+# Upgrade Alpine packages to patch critical CVEs, then create non-root user
+RUN apk upgrade --no-cache \
+    && addgroup -g 10001 -S app \
+    && adduser -u 10001 -S -G app -H -s /sbin/nologin app
+
 COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY --chown=app:app main.py .
