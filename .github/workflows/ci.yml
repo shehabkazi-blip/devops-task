@@ -61,6 +61,8 @@ jobs:
 
   build-scan:
     runs-on: ubuntu-latest
+    env:
+      TRIVY_IMAGE: aquasec/trivy:0.70.0
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -72,17 +74,15 @@ jobs:
           tags: devops-task:pr
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Trivy - informational (HIGH+CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: devops-task:pr
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: "0"
+      - name: Trivy - informational report (HIGH and CRITICAL)
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/" \
+            "$TRIVY_IMAGE" image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 0 devops-task:pr
       - name: Trivy - gate (fail on CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: devops-task:pr
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/" \
+            "$TRIVY_IMAGE" image --severity CRITICAL --ignore-unfixed --exit-code 1 devops-task:pr
