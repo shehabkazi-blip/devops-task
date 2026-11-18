@@ -152,8 +152,6 @@ Production was **not applied** to save cost; its configuration is proven with a 
 ![Smoke Test Pass](docs/screenshots/smoke-test-pass.png)
 ![AWS Server](docs/screenshots/aws_server.png)
 
-**Automatic rollback test** (`sudo /opt/app/scripts/deploy.sh does-not-exist` on the instance):
-![Automatic Rollback Test](docs/screenshots/k8s-rolout-rollback.png)
 
 ## 5. CI/CD and required configuration
 
